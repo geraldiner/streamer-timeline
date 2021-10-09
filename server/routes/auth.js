@@ -16,7 +16,7 @@ router.get(
 	}),
 	(req, res) => {
 		console.log("logging in");
-		res.redirect("http://localhost:3000/dashboard");
+		res.redirect("/dashboard");
 	},
 );
 
@@ -24,8 +24,13 @@ router.get(
 // @route GET /auth/logout
 router.get("/logout", (req, res) => {
 	console.log("logging out");
+	req.session.destroy(err => {
+		if (err) console.log("Error", err);
+		req.sessionID = null;
+		req.user = null;
+		res.redirect("http://localhost:3000");
+	});
 	req.logout();
-	res.redirect("http://localhost:3000/");
 });
 
 module.exports = router;
