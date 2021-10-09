@@ -1,25 +1,40 @@
-const TwitchTvStrategy = require("passport-twitchtv");
-const User = require("../models/User")
+const TwitchStrategy = require("passport-twitch-new").Strategy;
+const User = require("../models/User");
 
 module.exports = passport => {
 	passport.use(
-		new TwitchtvStrategy(
+		new TwitchStrategy(
 			{
 				clientID: process.env.TWITCH_CLIENT_ID,
 				clientSecret: process.env.TWITCH_CLIENT_SECRET,
-				callbackURL: "/auth/twitch/callback",
-				scope: "user_read",
+				callbackURL: "http://localhost:8888/auth/twitch/callback",
+				scope: ["user:read:email"],
 			},
 			async (accessToken, refreshToken, profile, done) => {
-				console.log(profile);
-        const newUser = {
-          twitchId = profile.id
-        }
-        
-				User.findOrCreate({ twitchtvId: profile.id }, function (err, user) {
-					return done(err, user);
-				});
+				try {
+					let user = await User.findOne({ twitchId: profile.id });
+					if (user) {
+						done(null, user);
+					} else {
+						user = await User.create({
+							twitchId: profile.id,
+							loginName: profile.login,
+							displayName: profile.display_name,
+							description: profile.description,
+							profileImg: profile.profile_image_url,
+						});
+						done(null, user);
+					}
+				} catch (error) {
+					console.log(error);
+				}
 			},
 		),
 	);
+
+	passport.serializeUser((user, done) => done(null, user));
+
+	passport.deserializeUser(function (user, done) {
+		done(null, user);
+	});
 };
